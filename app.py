@@ -12,8 +12,8 @@ def main():
             print("👋 Goodbye!")
             break
         try:
-            response = qa_chain.run(query)
-            print(f"Advisor: {response}\n")
+            response = qa_chain.invoke({"query": query})
+            print(f"Advisor: {response['result']}\n")
         except Exception as e:
             print(f"⚠️ Error: {e}\n")
 
