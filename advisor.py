@@ -1,16 +1,17 @@
 import os
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import TextLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
 
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
 # Paths
-CATALOG_PATH = "catalog_data/catalog.txt"
+CATALOG_PATH = "catalog_data/data.pdf"
 VECTORSTORE_DIR = "vector_store"
 
 # Initialize LLM and Embeddings
@@ -19,7 +20,7 @@ embeddings = OpenAIEmbeddings()
 
 def build_vectorstore():
     """Builds a FAISS vectorstore from the catalog data."""
-    loader = TextLoader(CATALOG_PATH)
+    loader = PyPDFLoader(CATALOG_PATH)
     docs = loader.load()
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
     texts = text_splitter.split_documents(docs)
@@ -30,11 +31,11 @@ def build_vectorstore():
 
 def load_vectorstore():
     """Loads the existing FAISS vectorstore."""
-    return FAISS.load_local(VECTORSTORE_DIR, embeddings)
+    return FAISS.load_local(VECTORSTORE_DIR, embeddings, allow_dangerous_deserialization=True)
 
 def get_advisor_prompt():
     """Creates a specialized prompt for the CSUF CS graduate advisor."""
-    return """You are an AI academic advisor specializing in the Master's in Computer Science program at California State University, Fullerton (CSUF). Your role is to provide accurate, helpful guidance to graduate students.
+    template = """You are an AI academic advisor specializing in the Master's in Computer Science program at California State University, Fullerton (CSUF). Your role is to provide accurate, helpful guidance to graduate students.
 
 Key responsibilities:
 1. Provide information about program requirements, course offerings, and degree completion
@@ -59,7 +60,17 @@ When answering questions:
 4. Acknowledge when you're unsure and suggest consulting with a human advisor
 5. Focus on helping students make informed decisions about their academic journey
 
-Remember: While you can provide general guidance, always recommend consulting with a human advisor for complex or specific situations."""
+Remember: While you can provide general guidance, always recommend consulting with a human advisor for complex or specific situations.
+
+Context: {context}
+Question: {question}
+
+Answer:"""
+
+    return PromptTemplate(
+        template=template,
+        input_variables=["context", "question"]
+    )
 
 def get_qa_chain():
     """Creates the QA chain using LangChain's RetrievalQA."""
@@ -68,6 +79,7 @@ def get_qa_chain():
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
+        chain_type="stuff",
         chain_type_kwargs={"prompt": get_advisor_prompt()}
     )
     return qa_chain
