@@ -8,3 +8,5 @@ __pycache__/
 # Vector store files
 *.pkl
 *.faiss
+
+venv/
