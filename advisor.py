@@ -15,7 +15,7 @@ CATALOG_PATH = "catalog_data/data.pdf"
 VECTORSTORE_DIR = "vector_store"
 
 # Initialize LLM and Embeddings
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-4.1-mini")
 embeddings = OpenAIEmbeddings()
 
 def build_vectorstore():
@@ -75,7 +75,7 @@ Answer:"""
 def get_qa_chain():
     """Creates the QA chain using LangChain's RetrievalQA."""
     vectorstore = load_vectorstore()
-    retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+    retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 10})
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
